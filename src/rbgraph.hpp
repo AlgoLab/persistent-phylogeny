@@ -200,6 +200,8 @@ struct if_singleton {
     @return True if \e v is a singleton in \e g
   */
   inline bool operator()(const RBVertex& v, const RBGraph& g) const {
+    /*if (logging::enabled && out_degree(v, g) == 0)
+      std::cout << "[INFO] Found singleton vertex to remove: " << g[v].name << std::endl;*/
     return (out_degree(v, g) == 0);
   }
 };
@@ -226,6 +228,9 @@ struct if_not_maximal {
   */
   inline bool operator()(const RBVertex v, const RBGraph& g) const {
     if (m_cm == nullptr) return false;
+
+    /*if (logging::enabled && std::find(m_cm->cbegin(), m_cm->cend(), v) != m_cm->cend())
+      std::cout << "[INFO] Found maximal character to remove: " << g[v].name << std::endl;*/
 
     return (std::find(m_cm->cbegin(), m_cm->cend(), v) == m_cm->cend());
   }

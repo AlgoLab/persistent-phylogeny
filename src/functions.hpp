@@ -193,6 +193,14 @@ RBVertex get_minimal_p_active_species(const RBGraph& g);
 */
 RBVertex get_quasi_active_species(const RBGraph& g);
 
+/**
+  @brief Return a pending species that has a unique minimal neighbor. This function is called in the algorithm when there are exactly two pending species.
+
+  @param[in] s a RBVertex as species
+
+  @return A species
+*/
+RBVertex get_pending_species_with_unique_minimal_neighbor(const RBGraph& g);
 
 /**
   @brief Execute the algorithm on the maximal reducible graph \e g .

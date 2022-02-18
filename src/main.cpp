@@ -118,8 +118,8 @@ int main(int argc, const char* argv[]) {
       std::cout << "[INFO] Extracting the maximal reducible graph..."  << std::endl;
     }
 
-    RBGraph gm;
-    maximal_reducible_graph(g, gm, false);
+    //RBGraph gm;
+    //maximal_reducible_graph(g, gm, false);
 
     if (logging::enabled) {
       // verbosity enabled
@@ -130,14 +130,15 @@ int main(int argc, const char* argv[]) {
     std::list<SignedCharacter> realized_characters;
 
     try {
-      realized_characters = ppp_maximal_reducible_graphs(gm);
+      // realized_characters = ppp_maximal_reducible_graphs(gm); // also uncomment lines 121 e 122 
+      realized_characters = ppp_maximal_reducible_graphs(g);
       successfully_reduced = true;
     } catch(...) {
       successfully_reduced = false;
     }
 
     if (!successfully_reduced) {
-      std::cout << "[WARNING] The graph can not be reduced!" << std::endl;
+      std::cout << "[NO] The graph can not be reduced!" << std::endl;
     } else {
       std::cout << "[OK] The graph has been successfully reduced! The realized characters are: ";
       std::cout << "<";

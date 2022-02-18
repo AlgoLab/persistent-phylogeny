@@ -49,6 +49,9 @@ void remove_vertex(const RBVertex& v, RBGraph& g) {
   // delete v from the map
   vertex_map(g).erase(g[v].name);
 
+  // if (logging::enabled)
+  //  std::cout << "[INFO] Removing vertex " << g[v].name << std::endl;
+
   boost::clear_vertex(v, g);
   boost::remove_vertex(v, g);
 
@@ -638,6 +641,8 @@ void remove_duplicate_species(RBGraph& g) {
       }
       if (eql) {
         // A vertex with the same edge list has been found. We have to delete it
+        if (logging::enabled)
+          std::cout << "[INFO] Found duplicate species " << *v << std::endl;
         remove_vertex(*v, g);
         removed = true;
       }

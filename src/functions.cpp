@@ -44,7 +44,7 @@ std::pair<std::list<SignedCharacter>, bool> realize_character(const SignedCharac
     // c+ and c is inactive
     if (logging::enabled) {
       // verbosity enabled
-      //std::cout << "Realizing " << sc;
+      // std::cout << "Realizing " << sc;
     }
     // realize the character c+:
     // - add a red edge between c and each species in D(c) \ N(c)
@@ -273,7 +273,24 @@ RBVertex get_quasi_active_species(const RBGraph& g) {
   return 0;
 }
 
+RBVertex get_pending_species_with_unique_minimal_neighbor(const RBGraph& g) {
+  // This function is executed in the algorithm when there are just two pending species. We need to choose and return the pending species that has a unique neighbor that is minimal.
+
+  RBVertex result = 0;
+  std::list<RBVertex> neighbors;
+  std::list<RBVertex> minimal_p_active_species = get_all_minimal_p_active_species(g, true);
+  for (RBVertex v :  get_pending_species(g)) {
+    neighbors = get_neighbors(v, g);
+    if (neighbors.size() == 1 && contains(minimal_p_active_species, *neighbors.begin()))
+      return v;
+  }
+
+  return result;
+}
+
 std::list<SignedCharacter> ppp_maximal_reducible_graphs(RBGraph& g) {
+
+  //std::cout << g << "\n" << std::endl;
 
   std::list<SignedCharacter> realized_chars = realize_red_univ_and_univ_chars(g).first;
   remove_duplicate_species(g);
@@ -281,26 +298,68 @@ std::list<SignedCharacter> ppp_maximal_reducible_graphs(RBGraph& g) {
 
   while (!is_empty(g)) {
      
-    if (get_pending_species(g).size() == 1)
+    if (get_pending_species(g).size() == 1) {
+
+      if (logging::enabled) 
+        std::cout << "[INFO] Unique pending species found: " << g[*get_pending_species(g).begin()].name << std::endl;
+
       tmp = realize_species(*get_pending_species(g).begin(), g).first;
-    else if (get_minimal_p_active_species(g) != 0) 
+
+    } else if (get_pending_species(g).size() == 2 && get_pending_species_with_unique_minimal_neighbor(g) != 0 && get_inactive_chars(g).size() >= 4) {
+
+      if (logging::enabled) {
+        std::cout << "[INFO] There are two pending species and one of them has a unique neighbor which is minimal: starting realizing that species: " << std::endl;
+      }
+
+       tmp = realize_species(get_pending_species_with_unique_minimal_neighbor(g), g).first;
+
+    } else if (get_minimal_p_active_species(g) != 0) {
+
+      if (logging::enabled) 
+        std::cout << "[INFO] Minimal p-active species found: " << g[get_minimal_p_active_species(g)].name << std::endl;
+
       tmp = realize_species(get_minimal_p_active_species(g), g).first;
-    else if (is_degenerate(g)) 
+    
+    } else if (is_degenerate(g)) {
+
+      if (logging::enabled) {
+        std::cout << "[INFO] Graph is degenerate: starting realizing inactive characters: " << std::endl;
+      }
+
       for (RBVertex c : get_inactive_chars(g))
         tmp.splice(tmp.end(), realize_character({g[c].name, State::gain}, g).first);
-    else if (get_active_species(g).size() == 1) 
+
+    } else if (get_active_species(g).size() == 1) {
+
+      if (logging::enabled) {
+        std::cout << "[INFO] Found unique active species: " << g[*get_active_species(g).begin()].name << std::endl;
+      }
+
       tmp = realize_species(*get_active_species(g).begin(), g).first;
-    else if (get_quasi_active_species(g) != 0 && all_species_with_red_edges(g)) 
+
+    } else if (get_quasi_active_species(g) != 0 && all_species_with_red_edges(g)) {
+
+      if (logging::enabled) {
+        std::cout << "[INFO] All species have red edges and there are quasi active species to realize" << std::endl;
+      }
+
       tmp = realize_species(get_quasi_active_species(g), g).first;
-    else {
+
+    } else {
+
       if (has_red_sigmagraph(g))
         std::cout << "[INFO] Red sigma graph generated" << std::endl;
       throw std::runtime_error("[ERROR] In ppp_maximal_reducible_graphs(): could not build the PPP");
+
     }
+
+    //std::cout << g << "\n" << std::endl;
 
     realized_chars.splice(realized_chars.end(), tmp);
     realized_chars.splice(realized_chars.end(), realize_red_univ_and_univ_chars(g).first);
     remove_duplicate_species(g);
+
+    //std::cout << g << "\n" << std::endl;
 
     if (!is_empty(g)) {
       RBGraphVector conn_compnts = connected_components(g);
@@ -334,7 +393,7 @@ std::pair<std::list<SignedCharacter>, bool> realize_red_univ_and_univ_chars(RBGr
       // realize v-
       if (logging::enabled) {
         // verbosity enabled
-        //std::cout << "G red-universal character " << g[*v].name << std::endl;
+        std::cout << "[INFO] found red-universal character to realize: " << g[*v].name << std::endl;
       }
       std::tie(lsc, std::ignore) = realize_character({g[*v].name, State::lose}, g);
 
@@ -348,7 +407,7 @@ std::pair<std::list<SignedCharacter>, bool> realize_red_univ_and_univ_chars(RBGr
       // realize v+
       if (logging::enabled) {
         // verbosity enabled
-        //std::cout << "G universal character " << g[*v].name << std::endl;
+        std::cout << "[INFO] Found universal character to realize: " << g[*v].name << std::endl;
       }
 
       std::list<SignedCharacter> lsc;
