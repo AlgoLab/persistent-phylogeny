@@ -291,7 +291,7 @@ std::ostream& operator<<(std::ostream& os, const RBGraph& g) {
 
     auto line(g[*v].name + ":" + edges_str);
 
-    if (std::next(v) != v_end) line += "\n";
+    //if (std::next(v) != v_end) line += "\n";
 
     if (is_species(*v, g))
       species.push_back(line);
@@ -322,7 +322,7 @@ std::ostream& operator<<(std::ostream& os, const RBGraph& g) {
 
   std::string lines_str;
   for (const auto& line : lines) {
-    lines_str += line;
+    lines_str += line + "\n";
   }
 
   os << lines_str;
