@@ -842,6 +842,9 @@ RBGraphVector connected_components(const RBGraph& g, const RBVertexIMap& c_map,
 std::list<RBVertex> get_neighbors(const RBVertex& v, const RBGraph& g);
 
 
+
+
+
 /**
   @brief Return a map M where M[v] is the list of verteces adjacent to vertex \e v.
  

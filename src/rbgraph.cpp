@@ -642,7 +642,7 @@ void remove_duplicate_species(RBGraph& g) {
       if (eql) {
         // A vertex with the same edge list has been found. We have to delete it
         if (logging::enabled)
-          std::cout << "[INFO] Found duplicate species " << *v << std::endl;
+          std::cout << "[INFO] Found duplicate species " << g[*v].name << std::endl;
         remove_vertex(*v, g);
         removed = true;
       }
@@ -845,6 +845,22 @@ std::list<RBVertex> get_neighbors(const RBVertex& v, const RBGraph& g) {
   return std::list<RBVertex>(output.begin(), output.end());
 }
 
+// grado è degli inattivi + la specie pendente deve essere minimal p-active
+std::list<RBVertex> get_closest_neighbors(const RBVertex& v, const RBGraph& g) {
+  std::list<RBVertex> v_neighbors = get_neighbors(v, g);
+  sort_by_degree_asc(v_neighbors, g);
+  std::list<RBVertex> v_closest_neighbors;
+  bool firstInserted = false;
+  for (RBVertex n : v_neighbors) {
+    if (!firstInserted) {
+      v_closest_neighbors.push_back(n);
+      firstInserted = true;
+    } else if (get_adj_inactive_characters(n, g).size() == get_adj_inactive_characters(*v_closest_neighbors.begin(), g).size())
+      v_closest_neighbors.push_back(n);
+  }
+  return v_closest_neighbors;
+}
+
 
 std::map<RBVertex, std::list<RBVertex>> get_adj_map(const RBGraph& g) {
   std::map<RBVertex, std::list<RBVertex>> adj_map;
@@ -982,7 +998,7 @@ const std::list<RBVertex> maximal_characters(const RBGraph& g) {
   std::list<RBVertex> cm;
 
   std::list<RBVertex> inactive_chars = get_inactive_chars(g);
-  sort_by_degree(inactive_chars, g);
+  sort_by_degree_desc(inactive_chars, g);
 
   // for each inactive character c in g, if S(c) ⊄ S(c') for any
   // character c', then v is a maximal character and it

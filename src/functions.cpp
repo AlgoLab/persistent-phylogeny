@@ -181,7 +181,7 @@ bool is_complete(std::list<SignedCharacter> sc, const RBGraph& gm) {
   return true;
 }
 
-void sort_by_degree(std::list<RBVertex>& list_to_sort, const RBGraph& g) {
+void sort_by_degree_desc(std::list<RBVertex>& list_to_sort, const RBGraph& g) {
   // constructing a list of pairs <RBVertex, int>, where the first element is a vertex and the second element is the degree of the vertex
   std::list<std::pair<RBVertex, int>> list_of_pairs;
   
@@ -200,10 +200,29 @@ void sort_by_degree(std::list<RBVertex>& list_to_sort, const RBGraph& g) {
     list_to_sort.push_back(pair.first);
 }
 
+void sort_by_degree_asc(std::list<RBVertex>& list_to_sort, const RBGraph& g) {
+  // constructing a list of pairs <RBVertex, int>, where the first element is a vertex and the second element is the degree of the vertex
+  std::list<std::pair<RBVertex, int>> list_of_pairs;
+  
+  for (RBVertex v : list_to_sort)
+    list_of_pairs.push_back(std::make_pair(v, out_degree(v, g)));
+  
+  auto comparator = [](const std::pair<RBVertex, int> &a, const std::pair<RBVertex, int> &b) { 
+    return  a.second < b.second; 
+  };
+
+  list_of_pairs.sort(comparator);
+
+  list_to_sort.clear();
+
+  for (std::pair<RBVertex, int> pair : list_of_pairs)
+    list_to_sort.push_back(pair.first);
+}
+
 std::list<RBVertex> get_all_minimal_p_active_species(const RBGraph& g, bool all) {
   std::list<RBVertex> out;
   std::list<RBVertex> active_species = get_active_species(g);
-  sort_by_degree(active_species, g);
+  sort_by_degree_desc(active_species, g);
 
   bool found;
   int num_inctv_chars_v, num_inctv_chars_u;
@@ -273,15 +292,16 @@ RBVertex get_quasi_active_species(const RBGraph& g) {
   return 0;
 }
 
-RBVertex get_pending_species_with_unique_minimal_neighbor(const RBGraph& g) {
-  // This function is executed in the algorithm when there are just two pending species. We need to choose and return the pending species that has a unique neighbor that is minimal.
+RBVertex get_pending_and_minimal_p_active_species_with_unique_closest_neighbor(const RBGraph& g) {
 
   RBVertex result = 0;
   std::list<RBVertex> neighbors;
   std::list<RBVertex> minimal_p_active_species = get_all_minimal_p_active_species(g, true);
+
   for (RBVertex v :  get_pending_species(g)) {
-    neighbors = get_neighbors(v, g);
-    if (neighbors.size() == 1 && contains(minimal_p_active_species, *neighbors.begin()))
+    neighbors = get_closest_neighbors(v, g);
+
+    if (neighbors.size() == 1 && contains(minimal_p_active_species, v))
       return v;
   }
 
@@ -290,40 +310,51 @@ RBVertex get_pending_species_with_unique_minimal_neighbor(const RBGraph& g) {
 
 std::list<SignedCharacter> ppp_maximal_reducible_graphs(RBGraph& g) {
 
-  //std::cout << g << "\n" << std::endl;
-
   std::list<SignedCharacter> realized_chars = realize_red_univ_and_univ_chars(g).first;
   remove_duplicate_species(g);
   std::list<SignedCharacter> tmp;
+
+  if (logging::enabled) {
+    std::cout << g << std::endl;
+    std::cout << "[INFO] Removing any existing universal and red-universal characters, as well as duplicate species" << std::endl;
+    std::cout << g << std::endl;
+  }
 
   while (!is_empty(g)) {
      
     if (get_pending_species(g).size() == 1) {
 
       if (logging::enabled) 
-        std::cout << "[INFO] Unique pending species found: " << g[*get_pending_species(g).begin()].name << std::endl;
+        std::cout << "[INFO] Unique pending species found: realizing " << g[*get_pending_species(g).begin()].name << std::endl;
 
       tmp = realize_species(*get_pending_species(g).begin(), g).first;
 
-    } else if (get_pending_species(g).size() == 2 && get_pending_species_with_unique_minimal_neighbor(g) != 0 && get_inactive_chars(g).size() >= 4) {
+    } else if (get_pending_species(g).size() == 2 && get_pending_and_minimal_p_active_species_with_unique_closest_neighbor(g) != 0 && get_inactive_chars(g).size() >= 4) {
+
+      RBVertex species_to_realize = get_pending_and_minimal_p_active_species_with_unique_closest_neighbor(g);
 
       if (logging::enabled) {
-        std::cout << "[INFO] There are two pending species and one of them has a unique neighbor which is minimal: starting realizing that species: " << std::endl;
+        std::cout << "[INFO] There are two pending species and one of them is a minimal p-active species with a unique closest neighbor: realizing " << g[species_to_realize].name << std::endl;
       }
 
-       tmp = realize_species(get_pending_species_with_unique_minimal_neighbor(g), g).first;
+       tmp = realize_species(species_to_realize, g).first;
 
     } else if (get_minimal_p_active_species(g) != 0) {
 
-      if (logging::enabled) 
-        std::cout << "[INFO] Minimal p-active species found: " << g[get_minimal_p_active_species(g)].name << std::endl;
+      RBVertex species_to_realize = get_minimal_p_active_species(g);
 
-      tmp = realize_species(get_minimal_p_active_species(g), g).first;
+      if (logging::enabled) 
+        std::cout << "[INFO] Minimal p-active species found: realizing " << g[species_to_realize].name << std::endl;
+
+      tmp = realize_species(species_to_realize, g).first;
     
     } else if (is_degenerate(g)) {
 
       if (logging::enabled) {
-        std::cout << "[INFO] Graph is degenerate: starting realizing inactive characters: " << std::endl;
+        std::cout << "[INFO] Graph is degenerate: starting realizing inactive characters: ";
+        for (RBVertex c : get_inactive_chars(g))
+          std::cout << g[c].name << " ";
+        std::cout << std::endl;
       }
 
       for (RBVertex c : get_inactive_chars(g))
@@ -331,19 +362,23 @@ std::list<SignedCharacter> ppp_maximal_reducible_graphs(RBGraph& g) {
 
     } else if (get_active_species(g).size() == 1) {
 
+      RBVertex species_to_realize = *get_active_species(g).begin();
+
       if (logging::enabled) {
-        std::cout << "[INFO] Found unique active species: " << g[*get_active_species(g).begin()].name << std::endl;
+        std::cout << "[INFO] Found unique active species: realizing " << g[species_to_realize].name << std::endl;
       }
 
-      tmp = realize_species(*get_active_species(g).begin(), g).first;
+      tmp = realize_species(species_to_realize, g).first;
 
     } else if (get_quasi_active_species(g) != 0 && all_species_with_red_edges(g)) {
 
+      RBVertex species_to_realize = get_quasi_active_species(g);
+
       if (logging::enabled) {
-        std::cout << "[INFO] All species have red edges and there are quasi active species to realize" << std::endl;
+        std::cout << "[INFO] All species have red edges and there are quasi active species: realizing " << g[species_to_realize].name << std::endl;
       }
 
-      tmp = realize_species(get_quasi_active_species(g), g).first;
+      tmp = realize_species(species_to_realize, g).first;
 
     } else {
 
@@ -353,21 +388,32 @@ std::list<SignedCharacter> ppp_maximal_reducible_graphs(RBGraph& g) {
 
     }
 
-    //std::cout << g << "\n" << std::endl;
+    if (logging::enabled) {
+      std::cout << g << std::endl;
+      std::cout << "[INFO] Removing any existing universal and red-universal characters, as well as duplicate species" << std::endl;
+    }
 
     realized_chars.splice(realized_chars.end(), tmp);
     realized_chars.splice(realized_chars.end(), realize_red_univ_and_univ_chars(g).first);
     remove_duplicate_species(g);
 
-    //std::cout << g << "\n" << std::endl;
+    if (logging::enabled) {
+      std::cout << g << std::endl;
+    }
 
     if (!is_empty(g)) {
       RBGraphVector conn_compnts = connected_components(g);
       auto cc = conn_compnts.begin();
       auto cc_end = conn_compnts.end();
       for (; cc != cc_end; ++cc) {
+        if (is_empty(*cc->get()))
+          continue;
         RBGraph tmp_graph;
         copy_graph(*cc->get(), tmp_graph);
+        if (logging::enabled) {
+          std::cout << "[INFO] Recursive call ppp_maximal_reducible_graph() on the following graph: " << std::endl;
+          std::cout << tmp_graph << std::endl;
+        }
         tmp = ppp_maximal_reducible_graphs(*cc->get());
         for (RBVertex v : tmp_graph.m_vertices)
           remove_vertex(tmp_graph[v].name, g);
@@ -499,7 +545,7 @@ RBVertex get_extension(const RBVertex& s, const RBGraph& gmax, const RBGraph& gm
 // must not induce a red-sigma graph and (2) X must be minimal.
 
 // we first sort the candidate list so that (2) is satisfied
-sort_by_degree(candidates, gmin);
+sort_by_degree_desc(candidates, gmin);
 candidates.reverse();
 for (RBVertex candidate : candidates) {
 

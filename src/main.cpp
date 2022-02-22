@@ -115,11 +115,16 @@ int main(int argc, const char* argv[]) {
 
     if (logging::enabled) {
       // verbosity enabled
+      std::cout << g << std::endl;
       std::cout << "[INFO] Extracting the maximal reducible graph..."  << std::endl;
     }
 
-    //RBGraph gm;
-    //maximal_reducible_graph(g, gm, false);
+    RBGraph gm;
+    maximal_reducible_graph(g, gm, false);
+    std::cout << gm << std::endl;
+
+    //std::cout << gm << std::endl;
+    //exit(0); uncomment if you want to run "extract_maximal_matrices.py"
 
     if (logging::enabled) {
       // verbosity enabled
@@ -130,8 +135,8 @@ int main(int argc, const char* argv[]) {
     std::list<SignedCharacter> realized_characters;
 
     try {
-      // realized_characters = ppp_maximal_reducible_graphs(gm); // also uncomment lines 121 e 122 
-      realized_characters = ppp_maximal_reducible_graphs(g);
+      realized_characters = ppp_maximal_reducible_graphs(gm); //scommentare riga 121 e 122 anche
+      //realized_characters = ppp_maximal_reducible_graphs(g);
       successfully_reduced = true;
     } catch(...) {
       successfully_reduced = false;

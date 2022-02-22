@@ -156,8 +156,15 @@ bool is_complete(std::list<SignedCharacter> sc, const RBGraph& gm);
   @param[in] list_to_order  List of vertices
   @param[in] g              Red-black graph
 */
-void sort_by_degree(std::list<RBVertex>& list_to_sort, const RBGraph& g);
+void sort_by_degree_desc(std::list<RBVertex>& list_to_sort, const RBGraph& g);
 
+/**
+  @brief Given a list of vertices, it sorts the list by using the concept of vertex degree  
+
+  @param[in] list_to_order  List of vertices
+  @param[in] g              Red-black graph
+*/
+void sort_by_degree_asc(std::list<RBVertex>& list_to_sort, const RBGraph& g);
 
 /**
   @brief Return the minimal p-active species in \e g.
@@ -200,7 +207,7 @@ RBVertex get_quasi_active_species(const RBGraph& g);
 
   @return A species
 */
-RBVertex get_pending_species_with_unique_minimal_neighbor(const RBGraph& g);
+RBVertex get_pending_and_minimal_p_active_species_with_unique_closest_neighbor(const RBGraph& g);
 
 /**
   @brief Execute the algorithm on the maximal reducible graph \e g .
